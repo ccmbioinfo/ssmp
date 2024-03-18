@@ -22,6 +22,7 @@ import {
 import { getFromCache, putInCache } from '../../../utils/cache';
 import { timeit, timeitAsync } from '../../../utils/timeit';
 import resolveAssembly from '../utils/resolveAssembly';
+import resolveChromosome from '../utils/resolveChromosome';
 
 /* eslint-disable camelcase */
 
@@ -63,20 +64,28 @@ const _getCMHNodeQuery = async ({
   const url = `${process.env.CMH_URL}/rest/variants/match`;
   /* eslint-disable @typescript-eslint/no-unused-vars */
   const { position, ...gene } = geneInput;
+  const {chromosome: chrom, start, end} = resolveChromosome(position);
   variant.assemblyId = 'GRCh38';
   try {
     CMHVariantQueryResponse = await axios.post<G4RDVariantQueryResult>(
       url,
       {
         gene,
-        variant,
+        variant: {
+          ...variant,
+          position: {
+            chrom: Number(chrom),
+            start: Number(start),
+            end: Number(end),
+          },
+        },
       },
       {
         headers: {
           Authorization,
           'Content-Type': 'application/json',
           Accept: 'application/json',
-          'X-Gene42-Secret': `${process.env.CMH_GENE42_SECRET}`, //
+          'X-Gene42-Secret': `${process.env.CMH_GENE42_SECRET}`,
         },
       }
     );
@@ -134,6 +143,7 @@ const _getCMHNodeQuery = async ({
     }
   } catch (e: any) {
     logger.error(e);
+    logger.debug(JSON.stringify(e));
     CMHNodeQueryError = e;
   }
 
