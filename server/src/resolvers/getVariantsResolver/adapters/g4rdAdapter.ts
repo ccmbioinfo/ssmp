@@ -98,13 +98,8 @@ const _getG4rdNodeQuery = async ({
           },
         });
 
-        logger.debug('Begin fetching family IDs');
-
         const familyResponses = await Promise.allSettled(
           individualIds.map((id, i) => {
-            if (i % 50 === 0 || i === individualIds.length - 1) {
-              logger.debug(`Fetching family ${i + 1} of ${individualIds.length}`);
-            }
             return patientFamily.get<G4RDFamilyQueryResult>(
               new URL(`${process.env.G4RD_URL}/rest/patients/${id}/family`).toString()
             );
@@ -230,7 +225,7 @@ export const transformG4RDQueryResponse: ResultTransformer<PTVariantArray> = tim
         const patient = individualIdsMap[individualId];
 
         const contactInfo: string = patient.contact
-          ? patient.contact.map(c => c.name).join(' ,')
+          ? patient.contact.map(c => c.name).join(', ')
           : '';
 
         let info: IndividualInfoFields = {};
