@@ -27,19 +27,24 @@ const fetchPhenotipsVariants = async (
   baseUrl: string,
   gene: GeneQueryInput,
   variant: VariantQueryInput,
-  getAuthorization: () => Promise<string>
+  getAuthorization: () => Promise<string>,
+  additionalHeaders: { [k: string]: string } = {}
 ): Promise<PTPaginatedVariantQueryResult['results']> => {
   let currentPage = 1;
   let collectedResults: PTPaginatedVariantQueryResult['results'] = [];
   let maxResults = Infinity;
   const count = COUNT;
   const _position = resolveChromosome(gene.position);
+  const isGRCh38 = (['38', 'GRCh38', 'hg38'] as VariantQueryInput['assemblyId'][]).includes(
+    variant.assemblyId
+  );
+
   const chromosome =
     ['X', 'Y'].indexOf(_position.chromosome) !== -1
       ? _position.chromosome
       : Number(_position.chromosome);
   const position = {
-    chrom: chromosome,
+    chrom: isGRCh38 ? `chr${chromosome}` : chromosome,
     start: Number(_position.start),
     end: Number(_position.end),
   };
@@ -68,6 +73,7 @@ const fetchPhenotipsVariants = async (
             Authorization: await getAuthorization(),
             'Content-Type': 'application/json',
             Accept: 'application/json',
+            ...additionalHeaders,
           },
         }
       );

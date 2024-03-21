@@ -70,7 +70,10 @@ const _getCMHNodeQuery = async ({
       process.env.CMH_URL as string,
       geneInput,
       variant,
-      getAuthHeader
+      getAuthHeader,
+      {
+        'X-Gene42-Secret': `${process.env.CMH_GENE42_SECRET}`,
+      }
     );
 
     // Get patients info
@@ -86,7 +89,10 @@ const _getCMHNodeQuery = async ({
           CMHPatientQueryResponse = await fetchPhenotipsPatients(
             process.env.CMH_URL!,
             individualIds,
-            getAuthHeader
+            getAuthHeader,
+            {
+              'X-Gene42-Secret': `${process.env.CMH_GENE42_SECRET}`,
+            }
           );
         } catch (e) {
           logger.error(JSON.stringify(e));
