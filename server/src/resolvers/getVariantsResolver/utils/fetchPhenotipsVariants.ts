@@ -58,16 +58,18 @@ const fetchPhenotipsVariants = async (
   );
   do {
     try {
+      const payload = {
+        page: currentPage,
+        limit: count,
+        variant: {
+          ...variant,
+          position,
+          assemblyId: isGRCh38 ? "GRCh38" : "GRCh37",
+        },
+      };
       const variantQueryResponse = await axios.post<PTPaginatedVariantQueryResult>(
         `${baseUrl}/rest/variants/match`,
-        {
-          page: currentPage,
-          limit: count,
-          variant: {
-            ...variant,
-            position,
-          },
-        },
+        payload,
         {
           headers: {
             Authorization: await getAuthorization(),
@@ -101,7 +103,7 @@ const fetchPhenotipsVariants = async (
           throw new QueryResponseError({
             code: 500,
             message: 'Internal Server Error',
-            source: 'OSMP',
+            source: 'PhenoTips',  // should be updated in error catch
           });
         }
       }

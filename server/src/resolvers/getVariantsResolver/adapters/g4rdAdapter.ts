@@ -24,6 +24,7 @@ import { timeit, timeitAsync } from '../../../utils/timeit';
 import resolveAssembly from '../utils/resolveAssembly';
 import fetchPhenotipsVariants from '../utils/fetchPhenotipsVariants';
 import fetchPhenotipsPatients from '../utils/fetchPhenotipsPatients';
+import { QueryResponseError } from '../utils/queryResponseError';
 
 /* eslint-disable camelcase */
 
@@ -71,7 +72,6 @@ const _getG4rdNodeQuery = async ({
 
     // Get patients info
     if (G4RDVariants && G4RDVariants.length > 0) {
-      logger.debug(`G4RDVariants length: ${G4RDVariants.length}`);
       let individualIds = G4RDVariants.flatMap(v => v.individualIds).filter(Boolean); // Filter out undefined and null values.
 
       // Get all unique individual Ids.
@@ -126,6 +126,9 @@ const _getG4rdNodeQuery = async ({
       };
     }
   } catch (e: any) {
+    if (e instanceof QueryResponseError) {
+      e.source = SOURCE_NAME;
+    }
     logger.error(e);
     G4RDNodeQueryError = e;
   }

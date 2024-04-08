@@ -24,6 +24,7 @@ import { timeit, timeitAsync } from '../../../utils/timeit';
 import resolveAssembly from '../utils/resolveAssembly';
 import fetchPhenotipsVariants from '../utils/fetchPhenotipsVariants';
 import fetchPhenotipsPatients from '../utils/fetchPhenotipsPatients';
+import { QueryResponseError } from '../utils/queryResponseError';
 
 /* eslint-disable camelcase */
 
@@ -78,7 +79,6 @@ const _getCMHNodeQuery = async ({
 
     // Get patients info
     if (CMHVariants && CMHVariants.length > 0) {
-      logger.debug(`CMHVariants length: ${CMHVariants.length}`);
       let individualIds = CMHVariants.flatMap(v => v.individualIds).filter(Boolean); // Filter out undefined and null values.
 
       // Get all unique individual Ids.
@@ -125,6 +125,9 @@ const _getCMHNodeQuery = async ({
       }
     }
   } catch (e: any) {
+    if (e instanceof QueryResponseError) {
+      e.source = SOURCE_NAME;
+    }
     logger.error(e);
     logger.debug(JSON.stringify(e));
     CMHNodeQueryError = e;
