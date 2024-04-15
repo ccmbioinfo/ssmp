@@ -39,15 +39,13 @@ const fetchPhenotipsVariants = async (
     variant.assemblyId
   );
 
-  let chromosome =
+  const chromosome =
     ['X', 'Y'].indexOf(_position.chromosome) !== -1
       ? _position.chromosome
       : Number(_position.chromosome);
 
-  chromosome = isGRCh38 ? `chr${chromosome}` : chromosome;
-
   const position = {
-    chromosome,
+    chrom: isGRCh38 ? `chr${chromosome}` : chromosome,
     start: Number(_position.start),
     end: Number(_position.end),
   };
