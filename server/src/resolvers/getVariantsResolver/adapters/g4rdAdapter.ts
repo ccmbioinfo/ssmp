@@ -25,6 +25,8 @@ import resolveAssembly from '../utils/resolveAssembly';
 import fetchPhenotipsVariants from '../utils/fetchPhenotipsVariants';
 import fetchPhenotipsPatients from '../utils/fetchPhenotipsPatients';
 import { QueryResponseError } from '../utils/queryResponseError';
+import { liftoverOne } from '../utils/liftOver';
+import resolveChromosome from '../utils/resolveChromosome';
 
 /* eslint-disable camelcase */
 
@@ -56,6 +58,22 @@ const _getG4rdNodeQuery = async ({
       source: SOURCE_NAME,
     };
   }
+
+  if (variant.assemblyId.includes('38')) {
+    // convert to 37 if the position is in 38
+    const pos = resolveChromosome(geneInput.position);
+    const lifted = await liftoverOne(
+      {
+        chromosome: pos.chromosome,
+        start: Number(pos.start),
+        end: Number(pos.end),
+      },
+      'GRCh37',
+      variant.assemblyId
+    );
+    geneInput.position = `${pos.chromosome}:${lifted.start}-${lifted.end}`;
+  }
+
   /* eslint-disable @typescript-eslint/no-unused-vars */
   variant.assemblyId = 'GRCh37';
   // For g4rd node, assemblyId is a required field as specified in this sample request:

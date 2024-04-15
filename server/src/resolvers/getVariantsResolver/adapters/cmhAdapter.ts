@@ -25,6 +25,8 @@ import resolveAssembly from '../utils/resolveAssembly';
 import fetchPhenotipsVariants from '../utils/fetchPhenotipsVariants';
 import fetchPhenotipsPatients from '../utils/fetchPhenotipsPatients';
 import { QueryResponseError } from '../utils/queryResponseError';
+import resolveChromosome from '../utils/resolveChromosome';
+import { liftoverOne } from '../utils/liftOver';
 
 /* eslint-disable camelcase */
 
@@ -63,6 +65,22 @@ const _getCMHNodeQuery = async ({
       source: SOURCE_NAME,
     };
   }
+
+  if (!variant.assemblyId.includes('38')) {
+    // convert to GRCh38 if the position isn't in 38
+    const pos = resolveChromosome(geneInput.position);
+    const lifted = await liftoverOne(
+      {
+        chromosome: pos.chromosome,
+        start: Number(pos.start),
+        end: Number(pos.end),
+      },
+      'GRCh38',
+      variant.assemblyId
+    );
+    geneInput.position = `${pos.chromosome}:${lifted.start}-${lifted.end}`;
+  }
+
   /* eslint-disable @typescript-eslint/no-unused-vars */
   variant.assemblyId = 'GRCh38';
   // the replacement

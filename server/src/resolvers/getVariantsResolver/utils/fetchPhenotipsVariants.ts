@@ -39,12 +39,15 @@ const fetchPhenotipsVariants = async (
     variant.assemblyId
   );
 
-  const chromosome =
+  let chromosome =
     ['X', 'Y'].indexOf(_position.chromosome) !== -1
       ? _position.chromosome
       : Number(_position.chromosome);
+
+  chromosome = isGRCh38 ? `chr${chromosome}` : chromosome;
+
   const position = {
-    chrom: isGRCh38 ? `chr${chromosome}` : chromosome,
+    chromosome,
     start: Number(_position.start),
     end: Number(_position.end),
   };
@@ -64,7 +67,7 @@ const fetchPhenotipsVariants = async (
         variant: {
           ...variant,
           position,
-          assemblyId: isGRCh38 ? "GRCh38" : "GRCh37",
+          assemblyId: isGRCh38 ? 'GRCh38' : 'GRCh37',
         },
       };
       const variantQueryResponse = await axios.post<PTPaginatedVariantQueryResult>(
@@ -103,7 +106,7 @@ const fetchPhenotipsVariants = async (
           throw new QueryResponseError({
             code: 500,
             message: 'Internal Server Error',
-            source: 'PhenoTips',  // should be updated in error catch
+            source: 'PhenoTips', // should be updated in error catch
           });
         }
       }
