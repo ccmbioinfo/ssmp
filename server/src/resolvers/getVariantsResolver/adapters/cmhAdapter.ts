@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosResponse } from 'axios';
+import axios, { AxiosError } from 'axios';
 import jwtDecode from 'jwt-decode';
 import { URLSearchParams } from 'url';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,16 +12,21 @@ import {
   VariantResponseFields,
   G4RDFamilyQueryResult,
   G4RDPatientQueryResult,
-  G4RDVariantQueryResult,
   Disorder,
   IndividualInfoFields,
   PhenotypicFeaturesFields,
   NonStandardFeature,
   Feature,
+  PTVariantArray,
 } from '../../../types';
 import { getFromCache, putInCache } from '../../../utils/cache';
 import { timeit, timeitAsync } from '../../../utils/timeit';
 import resolveAssembly from '../utils/resolveAssembly';
+import fetchPhenotipsVariants from '../utils/fetchPhenotipsVariants';
+import fetchPhenotipsPatients from '../utils/fetchPhenotipsPatients';
+import { QueryResponseError } from '../utils/queryResponseError';
+import resolveChromosome from '../utils/resolveChromosome';
+import { liftoverOne } from '../utils/liftOver';
 
 /* eslint-disable camelcase */
 
@@ -45,8 +50,8 @@ const _getCMHNodeQuery = async ({
   input: { gene: geneInput, variant },
 }: QueryInput): Promise<VariantQueryResponse> => {
   let CMHNodeQueryError: CMHNodeQueryError | null = null;
-  let CMHVariantQueryResponse: null | AxiosResponse<G4RDVariantQueryResult> = null;
-  let CMHPatientQueryResponse: null | AxiosResponse<G4RDPatientQueryResult> = null;
+  let CMHVariants: null | PTVariantArray = null;
+  let CMHPatientQueryResponse: null | G4RDPatientQueryResult[] = null;
   const FamilyIds: null | Record<string, string> = {}; // <PatientId, FamilyId>
   let Authorization = '';
   try {
@@ -60,52 +65,57 @@ const _getCMHNodeQuery = async ({
       source: SOURCE_NAME,
     };
   }
-  const url = `${process.env.CMH_URL}/rest/variants/match`;
-  /* eslint-disable @typescript-eslint/no-unused-vars */
-  const { position, ...gene } = geneInput;
-  variant.assemblyId = 'GRCh38';
-  try {
-    CMHVariantQueryResponse = await axios.post<G4RDVariantQueryResult>(
-      url,
+
+  if (!variant.assemblyId.includes('38')) {
+    // convert to GRCh38 if the position isn't in 38
+    const pos = resolveChromosome(geneInput.position);
+    const lifted = await liftoverOne(
       {
-        gene,
-        variant,
+        chromosome: pos.chromosome,
+        start: Number(pos.start),
+        end: Number(pos.end),
       },
+      'GRCh38',
+      variant.assemblyId
+    );
+    geneInput.position = `${pos.chromosome}:${lifted.start}-${lifted.end}`;
+  }
+
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  variant.assemblyId = 'GRCh38';
+  // the replacement
+  try {
+    CMHVariants = await fetchPhenotipsVariants(
+      process.env.CMH_URL as string,
+      geneInput,
+      variant,
+      getAuthHeader,
       {
-        headers: {
-          Authorization,
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          'X-Gene42-Secret': `${process.env.CMH_GENE42_SECRET}`, //
-        },
+        'X-Gene42-Secret': `${process.env.CMH_GENE42_SECRET}`,
       }
     );
 
     // Get patients info
-    if (CMHVariantQueryResponse) {
-      let individualIds = CMHVariantQueryResponse.data.results
-        .map(v => v.individual.individualId!)
-        .filter(Boolean); // Filter out undefined and null values.
+    if (CMHVariants && CMHVariants.length > 0) {
+      let individualIds = CMHVariants.flatMap(v => v.individualIds).filter(Boolean); // Filter out undefined and null values.
 
       // Get all unique individual Ids.
       individualIds = [...new Set(individualIds)];
 
       if (individualIds.length > 0) {
-        const patientUrl = `${process.env.CMH_URL}/rest/patients/fetch?${individualIds
-          .map(id => `id=${id}`)
-          .join('&')}`;
-
-        CMHPatientQueryResponse = await axios.get<G4RDPatientQueryResult>(
-          new URL(patientUrl).toString(),
-          {
-            headers: {
-              Authorization,
-              'Content-Type': 'application/json',
-              Accept: 'application/json',
+        try {
+          CMHPatientQueryResponse = await fetchPhenotipsPatients(
+            process.env.CMH_URL!,
+            individualIds,
+            getAuthHeader,
+            {
               'X-Gene42-Secret': `${process.env.CMH_GENE42_SECRET}`,
-            },
-          }
-        );
+            }
+          );
+        } catch (e) {
+          logger.error(JSON.stringify(e));
+          CMHPatientQueryResponse = [];
+        }
 
         // Get Family Id for each patient.
         const patientFamily = axios.create({
@@ -133,14 +143,18 @@ const _getCMHNodeQuery = async ({
       }
     }
   } catch (e: any) {
+    if (e instanceof QueryResponseError) {
+      e.source = SOURCE_NAME;
+    }
     logger.error(e);
+    logger.debug(JSON.stringify(e));
     CMHNodeQueryError = e;
   }
 
   return {
     data: transformCMHQueryResponse(
-      (CMHVariantQueryResponse?.data as G4RDVariantQueryResult) || [],
-      (CMHPatientQueryResponse?.data as G4RDPatientQueryResult) || [],
+      (CMHVariants as PTVariantArray) || [],
+      (CMHPatientQueryResponse as G4RDPatientQueryResult[]) || [],
       FamilyIds
     ),
     error: transformCMHNodeErrorResponse(CMHNodeQueryError),
@@ -204,99 +218,92 @@ export const transformCMHNodeErrorResponse: ErrorTransformer<CMHNodeQueryError> 
 const isObserved = (feature: Feature | NonStandardFeature) =>
   feature.observed === 'yes' ? true : feature.observed === 'no' ? false : undefined;
 
-export const transformCMHQueryResponse: ResultTransformer<G4RDVariantQueryResult> = timeit(
+export const transformCMHQueryResponse: ResultTransformer<PTVariantArray> = timeit(
   'transformCMHQueryResponse'
 )(
   (
-    variantResponse: G4RDVariantQueryResult,
+    variants: PTVariantArray,
     patientResponse: G4RDPatientQueryResult[],
     familyIds: Record<string, string>
   ) => {
     const individualIdsMap = Object.fromEntries(patientResponse.map(p => [p.id, p]));
 
-    return (variantResponse.results || []).map(r => {
+    return (variants || []).flatMap(r => {
       /* eslint-disable @typescript-eslint/no-unused-vars */
       r.variant.assemblyId = resolveAssembly(r.variant.assemblyId);
-      const { individual, contactInfo } = r;
+      const { individualIds } = r;
 
-      const patient = individual.individualId ? individualIdsMap[individual.individualId] : null;
+      return individualIds.map(individualId => {
+        const patient = individualIdsMap[individualId];
 
-      let info: IndividualInfoFields = {};
-      let ethnicity: string = '';
-      let disorders: Disorder[] = [];
-      let phenotypicFeatures: PhenotypicFeaturesFields[] = individual.phenotypicFeatures || [];
+        const contactInfo: string = patient.contact
+          ? patient.contact.map(c => c.name).join(', ')
+          : '';
 
-      if (patient) {
-        const candidateGene = (patient.genes ?? []).map(g => g.gene).join('\n');
-        const classifications = (patient.genes ?? []).map(g => g.status).join('\n');
-        const diagnosis = patient.clinicalStatus;
-        const solved = patient.solved ? patient.solved.status : '';
-        const clinicalStatus = patient.clinicalStatus;
-        disorders = patient.disorders.filter(({ label }) => label !== 'affected') as Disorder[];
-        ethnicity = Object.values(patient.ethnicity)
-          .flat()
-          .map(p => p.trim())
-          .join(', ');
-        info = {
-          solved,
-          candidateGene,
-          diagnosis,
-          classifications,
-          clinicalStatus,
-          disorders,
-        };
-        // variant response contains all phenotypic features listed,
-        // even if some of them are explicitly _not_ observed by clinician and recorded as such
-        if (individual.phenotypicFeatures !== null && individual.phenotypicFeatures !== undefined) {
+        let info: IndividualInfoFields = {};
+        let ethnicity: string = '';
+        let disorders: Disorder[] = [];
+        let phenotypicFeatures: PhenotypicFeaturesFields[] = [];
+
+        if (patient) {
+          const candidateGene = (patient.genes ?? []).map(g => g.gene).join('\n');
+          const classifications = (patient.genes ?? []).map(g => g.status).join('\n');
+          const diagnosis = patient.clinicalStatus;
+          const solved = patient.solved ? patient.solved.status : '';
+          const clinicalStatus = patient.clinicalStatus;
+          disorders = patient.disorders.filter(({ label }) => label !== 'affected') as Disorder[];
+          ethnicity = Object.values(patient.ethnicity)
+            .flat()
+            .map(p => p.trim())
+            .join(', ');
+          info = {
+            solved,
+            candidateGene,
+            diagnosis,
+            classifications,
+            clinicalStatus,
+            disorders,
+          };
+          // variant response contains all phenotypic features listed,
+          // even if some of them are explicitly _not_ observed by clinician and recorded as such
           const features = [...(patient.features ?? []), ...(patient.nonstandard_features ?? [])];
-          const detailedFeatures = individual.phenotypicFeatures;
-          // build list of features the safe way
-          const detailedFeatureMap = Object.fromEntries(
-            detailedFeatures.map(feat => [feat.phenotypeId, feat])
-          );
           const finalFeatures: PhenotypicFeaturesFields[] = features.map(feat => {
-            if (feat.id === undefined) {
-              return {
-                ageOfOnset: null,
-                dateOfOnset: null,
-                levelSeverity: null,
-                onsetType: null,
-                phenotypeId: feat.id,
-                phenotypeLabel: feat.label,
-                observed: isObserved(feat),
-              };
-            }
             return {
-              ...detailedFeatureMap[feat.id],
+              // ageOfOnset: null,
+              // dateOfOnset: null,
+              levelSeverity: null,
+              // onsetType: null,
+              phenotypeId: feat.id,
+              phenotypeLabel: feat.label,
               observed: isObserved(feat),
             };
           });
           phenotypicFeatures = finalFeatures;
         }
-      }
 
-      const variant: VariantResponseFields = {
-        alt: r.variant.alt,
-        assemblyId: r.variant.assemblyId,
-        callsets: r.variant.callsets,
-        end: r.variant.end,
-        ref: r.variant.ref,
-        start: r.variant.start,
-        chromosome: r.variant.chromosome,
-        info: r.variant.info,
-      };
+        const variant: VariantResponseFields = {
+          alt: r.variant.alt,
+          assemblyId: r.variant.assemblyId,
+          callsets: r.variant.callsets,
+          end: r.variant.end,
+          ref: r.variant.ref,
+          start: r.variant.start,
+          chromosome: r.variant.chromosome,
+          info: r.variant.info,
+        };
 
-      let familyId: string = '';
-      if (individual.individualId) familyId = familyIds[individual.individualId];
+        const familyId: string = familyIds[individualId];
 
-      const individualResponseFields: IndividualResponseFields = {
-        ...individual,
-        ethnicity,
-        info,
-        familyId,
-        phenotypicFeatures,
-      };
-      return { individual: individualResponseFields, variant, contactInfo, source: SOURCE_NAME };
+        const individualResponseFields: IndividualResponseFields = {
+          sex: patient.sex,
+          ethnicity,
+          info,
+          familyId,
+          phenotypicFeatures,
+          individualId,
+        };
+        return { individual: individualResponseFields, variant, contactInfo, source: SOURCE_NAME };
+      });
     });
   }
 );
