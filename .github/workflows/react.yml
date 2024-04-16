@@ -21,14 +21,14 @@ jobs:
         shell: bash
         working-directory: react
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 16
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
         run: echo "dir=$(yarn cache dir)" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -58,14 +58,14 @@ jobs:
     concurrency: SSMP_BUILD
     if: github.ref == 'refs/heads/develop'
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 16
       - name: Get yarn cache path
         id: yarn-cache-path
         run: echo "dir=$(yarn cache dir)" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         id: restore
         with:
           path: |
