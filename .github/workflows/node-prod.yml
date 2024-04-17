@@ -96,8 +96,8 @@ jobs:
           SSH_AGENT_EVAL=$(ssh-agent -s)
           eval "$SSH_AGENT_EVAL"
           ssh-add - <<< "${{ secrets.DEPLOY_PRIVATE_KEY }}"
-          echo "ssh-agent-eval=$SSH_AGENT_EVAL" >> "$GITHUB_OUTPUT"
-          echo "ssh-agent-pid=$SSH_AGENT_PID" >> "$GITHUB_OUTPUT"
+          echo "::set-output name=ssh-agent-eval::$SSH_AGENT_EVAL"
+          echo "::set-output name=ssh-agent-pid::$SSH_AGENT_PID"
           mkdir -p ~/.ssh
           echo "${{ secrets.DEPLOY_HOST_KEY }}" > ~/.ssh/known_hosts
           chmod -R g-rwx,o-rwx ~/.ssh
