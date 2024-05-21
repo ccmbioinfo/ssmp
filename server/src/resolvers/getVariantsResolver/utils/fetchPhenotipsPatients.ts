@@ -19,7 +19,8 @@ const COUNT = 50;
 const fetchPhenotipsPatients = async (
   baseUrl: string,
   individualIds: string[],
-  getAuthorization: () => Promise<string>
+  getAuthorization: () => Promise<string>,
+  additionalHeaders: { [k: string]: string } = {}
 ): Promise<G4RDPatientQueryResult[]> => {
   let currStart = 0;
   let currEnd = COUNT;
@@ -44,6 +45,7 @@ const fetchPhenotipsPatients = async (
             Authorization: await getAuthorization(),
             'Content-Type': 'application/json',
             Accept: 'application/json',
+            ...additionalHeaders,
           },
         }
       );

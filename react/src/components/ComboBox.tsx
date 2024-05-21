@@ -30,7 +30,6 @@ interface ComboBoxProps<T> {
 }
 
 export const Wrapper = styled(Flex)`
-    position: relative
     min-height: 38px;
     flex-wrap: wrap;
     flex-grow: 0;
@@ -128,7 +127,7 @@ export default function ComboBox<T extends {}>({
                     </>
                 )}
             </Header>
-            <SelectableListWrapper fullWidth>
+            <SelectableListWrapper>
                 {open && (
                     <SelectableList
                         ref={ref}

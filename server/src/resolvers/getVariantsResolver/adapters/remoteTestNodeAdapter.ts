@@ -163,6 +163,7 @@ const transformStagerQueryResponse: ResultTransformer<StagerVariantQueryPayload[
           ad: g.alt_depths,
           burder: g.burden,
           zygosity: g.zygosity,
+          geneName: r.gene,
         },
       })),
       end: r.position,

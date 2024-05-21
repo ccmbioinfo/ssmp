@@ -1,10 +1,11 @@
-import { GnomadGRCh37AnnotationModel, GnomadGRCh38AnnotationModels } from '../../../models';
+import { getGnomadAnnotationModel } from '../../../models';
 import getCoordinates from '../../../models/utils/getCoordinates';
 import resolveAssembly from './resolveAssembly';
 import resolveChromosome from './resolveChromosome';
 import { GnomadAnnotationQueryResponse, VariantQueryDataResult } from '../../../types';
 import { QueryResponseError } from './queryResponseError';
 import { timeitAsync } from '../../../utils/timeit';
+import logger from '../../../logger';
 
 const fetchGnomadAnnotations = timeitAsync('annotateGnomad')(
   async (
@@ -18,11 +19,8 @@ const fetchGnomadAnnotations = timeitAsync('annotateGnomad')(
       const resolvedAssemblyId = resolveAssembly(assemblyId);
       const { chromosome } = resolveChromosome(position);
       const annotationCoordinates = getCoordinates(queryResponse);
-      const GnomadAnnotationModel =
-        resolvedAssemblyId === 'GRCh37'
-          ? GnomadGRCh37AnnotationModel
-          : GnomadGRCh38AnnotationModels[chromosome];
-
+      const GnomadAnnotationModel = getGnomadAnnotationModel(resolvedAssemblyId, chromosome);
+      logger.debug(`model: '${typeof GnomadAnnotationModel}'`);
       const annotations = await GnomadAnnotationModel.getAnnotations(annotationCoordinates);
 
       return { source, data: annotations };

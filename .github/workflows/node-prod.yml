@@ -31,17 +31,17 @@ jobs:
       run:
         working-directory: server
     steps:
-      - uses: actions/checkout@v3
-      - uses: docker/setup-buildx-action@v1
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
         with:
           buildkitd-flags: --debug
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 16
           cache: yarn
@@ -78,7 +78,7 @@ jobs:
     environment: OSMP_PROD
     concurrency: OSMP_PROD
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: docker/login-action@v1
         with:
           registry: ghcr.io
@@ -118,6 +118,14 @@ jobs:
           G4RD_GRANT_TYPE: ${{ secrets.G4RD_GRANT_TYPE }}
           G4RD_TOKEN_URL: ${{ secrets.G4RD_TOKEN_URL }}
           G4RD_CLIENT_ID: ${{ secrets.G4RD_CLIENT_ID }}
+          CMH_AZURE_CLIENT_ID: ${{ secrets.CMH_AZURE_CLIENT_ID }}
+          CMH_AZURE_CLIENT_SECRET: ${{ secrets.CMH_AZURE_CLIENT_SECRET }}
+          CMH_TOKEN_URL: ${{ secrets.CMH_TOKEN_URL }}
+          CMH_RESOURCE: ${{ secrets.CMH_RESOURCE }}
+          CMH_SCOPE: ${{ secrets.CMH_SCOPE }}
+          CMH_GRANT_TYPE: ${{ secrets.CMH_GRANT_TYPE }}
+          CMH_GENE42_SECRET: ${{ secrets.CMH_GENE42_SECRET }}
+          CMH_URL: ${{ secrets.CMH_URL }}
           KEYCLOAK_AUTH_URL: ${{ secrets.KEYCLOAK_AUTH_URL }}
           KEYCLOAK_REALM: ${{ secrets.KEYCLOAK_REALM }}
           KEYCLOAK_CLIENT_ID: ${{ secrets.KEYCLOAK_CLIENT_ID }}

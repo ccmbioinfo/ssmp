@@ -24,6 +24,9 @@ import { timeit, timeitAsync } from '../../../utils/timeit';
 import resolveAssembly from '../utils/resolveAssembly';
 import fetchPhenotipsVariants from '../utils/fetchPhenotipsVariants';
 import fetchPhenotipsPatients from '../utils/fetchPhenotipsPatients';
+import { QueryResponseError } from '../utils/queryResponseError';
+import { liftoverOne } from '../utils/liftOver';
+import resolveChromosome from '../utils/resolveChromosome';
 
 /* eslint-disable camelcase */
 
@@ -55,6 +58,22 @@ const _getG4rdNodeQuery = async ({
       source: SOURCE_NAME,
     };
   }
+
+  if (variant.assemblyId.includes('38')) {
+    // convert to 37 if the position is in 38
+    const pos = resolveChromosome(geneInput.position);
+    const lifted = await liftoverOne(
+      {
+        chromosome: pos.chromosome,
+        start: Number(pos.start),
+        end: Number(pos.end),
+      },
+      'GRCh37',
+      variant.assemblyId
+    );
+    geneInput.position = `${pos.chromosome}:${lifted.start}-${lifted.end}`;
+  }
+
   /* eslint-disable @typescript-eslint/no-unused-vars */
   variant.assemblyId = 'GRCh37';
   // For g4rd node, assemblyId is a required field as specified in this sample request:
@@ -70,8 +89,7 @@ const _getG4rdNodeQuery = async ({
     );
 
     // Get patients info
-    if (G4RDVariants) {
-      logger.debug(`G4RDVariants length: ${G4RDVariants.length}`);
+    if (G4RDVariants && G4RDVariants.length > 0) {
       let individualIds = G4RDVariants.flatMap(v => v.individualIds).filter(Boolean); // Filter out undefined and null values.
 
       // Get all unique individual Ids.
@@ -98,13 +116,8 @@ const _getG4rdNodeQuery = async ({
           },
         });
 
-        logger.debug('Begin fetching family IDs');
-
         const familyResponses = await Promise.allSettled(
           individualIds.map((id, i) => {
-            if (i % 50 === 0 || i === individualIds.length - 1) {
-              logger.debug(`Fetching family ${i + 1} of ${individualIds.length}`);
-            }
             return patientFamily.get<G4RDFamilyQueryResult>(
               new URL(`${process.env.G4RD_URL}/rest/patients/${id}/family`).toString()
             );
@@ -118,7 +131,22 @@ const _getG4rdNodeQuery = async ({
         });
       }
     }
+    if (G4RDVariants?.length === 0) {
+      // No variants, hence no point in processing anything else
+      return {
+        data: [],
+        source: SOURCE_NAME,
+        error: {
+          code: 404,
+          id: uuidv4(),
+          message: 'No variants found matching your query.',
+        },
+      };
+    }
   } catch (e: any) {
+    if (e instanceof QueryResponseError) {
+      e.source = SOURCE_NAME;
+    }
     logger.error(e);
     G4RDNodeQueryError = e;
   }
@@ -218,7 +246,7 @@ export const transformG4RDQueryResponse: ResultTransformer<PTVariantArray> = tim
         const patient = individualIdsMap[individualId];
 
         const contactInfo: string = patient.contact
-          ? patient.contact.map(c => c.name).join(' ,')
+          ? patient.contact.map(c => c.name).join(', ')
           : '';
 
         let info: IndividualInfoFields = {};
@@ -274,6 +302,7 @@ export const transformG4RDQueryResponse: ResultTransformer<PTVariantArray> = tim
           ref: r.variant.ref,
           start: r.variant.start,
           chromosome: r.variant.chromosome,
+          info: r.variant.info,
         };
 
         const familyId: string = familyIds[individualId];

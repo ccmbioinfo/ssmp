@@ -1,7 +1,6 @@
 import React from 'react';
 import { NetworkStatus, useApolloClient } from '@apollo/client';
 import { RiInformationFill } from 'react-icons/ri';
-import styled from 'styled-components/macro';
 import { useFetchVariantsQuery } from '../apollo/hooks';
 import {
     Background,
@@ -13,7 +12,7 @@ import {
     ComboBox,
     ErrorIndicator,
     Flex,
-    GeneSearch,
+    GeneCombinedSearch,
     Input,
     RequiredIndicator,
     RequiredTextBox,
@@ -22,6 +21,7 @@ import {
     Tooltip,
     Typography,
 } from '../components';
+import ErrorText from '../components/ErrorText';
 import { IconPadder } from '../components/Table/Table.styles';
 import SOURCES from '../constants/sources';
 import theme from '../constants/theme';
@@ -29,6 +29,7 @@ import { useErrorContext, useFormReducer } from '../hooks';
 import { formIsValid, FormState, Validator } from '../hooks/useFormReducer';
 import { AssemblyId } from '../types';
 import { formatErrorMessage, resolveAssembly } from '../utils';
+import isCanonicalRegion from '../utils/isCanonicalRegion';
 
 const queryOptionsFormValidator: Validator<QueryOptionsFormState> = {
     assemblyId: {
@@ -36,13 +37,42 @@ const queryOptionsFormValidator: Validator<QueryOptionsFormState> = {
         displayRequiredError: false,
     },
     gene: {
-        required: true,
+        required: false,
         displayRequiredError: false,
         rules: [
             {
                 valid: (state: FormState<QueryOptionsFormState>) =>
                     !!!state.gene.value || !!state.position.value,
                 error: 'Please select a gene from the autocomplete.',
+            },
+        ],
+    },
+    position: {
+        required: true,
+        displayRequiredError: false,
+        rules: [
+            {
+                valid: state => state.position.value.split(':').length === 2,
+                error: "Invalid format: expected 1 ':' separator between chromosome and start-end",
+            },
+            {
+                valid: state => state.position.value.split(':').at(1)?.split('-').length === 2,
+                error: "Invalid format: expected 1 '-' separator between start and end positions",
+            },
+            {
+                valid: state => isCanonicalRegion(state.position.value.split(':').at(0)!),
+                error: "Invalid format: chromosome expected between 1-22, or 'X' or 'Y'",
+            },
+            {
+                valid: state => {
+                    let [start, end] = state.position.value
+                        .split(':')
+                        .at(1)!
+                        .split('-')!
+                        .map(num => Number(num.replaceAll(',', '')));
+                    return start <= end;
+                },
+                error: 'Invalid format: start position cannot be greater than end position',
             },
         ],
     },
@@ -84,20 +114,6 @@ interface QueryOptionsFormState {
     sources: string[];
 }
 
-const ErrorWrapper = styled.div`
-    margin: 0 0 ${props => props.theme.space[2]};
-    padding: ${props => props.theme.space[4]} 0.75rem 0;
-`;
-
-const ErrorText: React.FC<{ error?: string }> = ({ error }) =>
-    error ? (
-        <ErrorWrapper>
-            <Typography error variant="subtitle" bold condensed>
-                {error}
-            </Typography>
-        </ErrorWrapper>
-    ) : null;
-
 const VariantQueryPage: React.FC<{}> = () => {
     const [queryOptionsForm, updateQueryOptionsForm, resetQueryOptionsForm] =
         useFormReducer<QueryOptionsFormState>(
@@ -120,7 +136,7 @@ const VariantQueryPage: React.FC<{}> = () => {
                 },
                 gene: {
                     geneName: queryOptionsForm.gene.value,
-                    position: queryOptionsForm.position.value,
+                    position: queryOptionsForm.position.value.replaceAll(',', ''),
                 },
                 sources: queryOptionsForm.sources.value,
             },
@@ -175,7 +191,7 @@ const VariantQueryPage: React.FC<{}> = () => {
                     <Flex alignItems="flex-start" style={{ flexGrow: 1 }}>
                         <Column
                             style={{
-                                width: '25%',
+                                width: '20%',
                                 minWidth: 150,
                             }}
                         >
@@ -186,6 +202,8 @@ const VariantQueryPage: React.FC<{}> = () => {
                                 onSelect={val =>
                                     updateQueryOptionsForm({
                                         assemblyId: val as AssemblyId,
+                                        gene: '',
+                                        position: '',
                                     })
                                 }
                                 options={['GRCh37', 'GRCh38'].map((a, id) => ({
@@ -201,24 +219,37 @@ const VariantQueryPage: React.FC<{}> = () => {
                             alignItems="flex-start"
                             style={{
                                 flexGrow: 1,
-                                minWidth: 200,
+                                minWidth: 240,
                             }}
                         >
                             <Typography variant="subtitle" bold>
-                                Gene Name <RequiredIndicator />
+                                Gene Name / Position <RequiredIndicator />
                             </Typography>
-                            <GeneSearch
+                            <GeneCombinedSearch
                                 assembly={resolveAssembly(queryOptionsForm.assemblyId.value)}
                                 geneName={queryOptionsForm.gene.value}
-                                onChange={geneName => updateQueryOptionsForm({ gene: geneName })}
-                                onSelect={({ name, position }) =>
+                                onNameChange={geneName =>
+                                    updateQueryOptionsForm({ gene: geneName })
+                                }
+                                onNameSelect={({ name, position }) =>
                                     updateQueryOptionsForm({
                                         gene: name,
                                         position,
                                     })
                                 }
+                                genePosition={queryOptionsForm.position.value}
+                                onPositionChange={position =>
+                                    updateQueryOptionsForm({
+                                        gene: '',
+                                        position,
+                                    })
+                                }
                             />
-                            <ErrorText error={queryOptionsForm.gene.error} />
+                            <ErrorText
+                                error={
+                                    queryOptionsForm.gene.error || queryOptionsForm.position.error
+                                }
+                            />
                         </Column>
                         <Column
                             style={{

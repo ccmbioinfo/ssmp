@@ -60,6 +60,7 @@ const addAdditionalFieldsAndFormatNulls = (
     gnomadHom: results.gnomadHom || 0,
     // gnomadHet: results.gnomadHet || 0,
     maleCount: 0,
+    geneName: !!results.geneName ? results.geneName! : 'Not Specified',
 });
 
 export const calculateColumnWidth = (

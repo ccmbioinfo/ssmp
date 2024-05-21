@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { NetworkStatus } from '@apollo/client';
 import { useAsyncDebounce } from 'react-table';
-import { useFetchAutocompleteQuery } from '../apollo/hooks';
-import { Background, Typography } from '../components';
-import { AssemblyId } from '../types';
-import ComboBox from './ComboBox';
-import { SelectableListItem } from './SelectableList';
+import { Background, Typography } from '..';
+import { useFetchAutocompleteQuery } from '../../apollo/hooks';
+import { AssemblyId } from '../../types';
+import isCanonicalRegion from '../../utils/isCanonicalRegion';
+import ComboBox from '../ComboBox';
+import { SelectableListItem } from '../SelectableList';
 interface HitPosition {
     chr: string;
     start: number;
@@ -30,17 +31,19 @@ export interface GeneSelectionValue {
     position: string;
 }
 
-interface GeneSearchProps {
+interface GeneNameSearchProps {
     assembly: AssemblyId;
     geneName: string;
     onSelect: (gene: GeneSelectionValue) => void;
     onChange: (geneName: string) => void;
 }
 
-const isCanonicalRegion = (chr: string) =>
-    ['X', 'Y', ...Array.from({ length: 22 }, (_, i) => (i + 1).toString())].includes(chr);
-
-const GeneSearch: React.FC<GeneSearchProps> = ({ assembly, geneName, onChange, onSelect }) => {
+const GeneNameSearch: React.FC<GeneNameSearchProps> = ({
+    assembly,
+    geneName,
+    onChange,
+    onSelect,
+}) => {
     const [options, setOptions] = useState<SelectableListItem<GeneSelectionValue>[]>([]);
 
     const [
@@ -164,4 +167,4 @@ const GeneSearch: React.FC<GeneSearchProps> = ({ assembly, geneName, onChange, o
     );
 };
 
-export default GeneSearch;
+export default GeneNameSearch;

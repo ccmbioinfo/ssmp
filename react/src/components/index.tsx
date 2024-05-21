@@ -14,7 +14,6 @@ import ErrorProvider, {
 } from './Error/ErrorProvider';
 import ErrorFallback from './ErrorFallback';
 import ErrorIndicator from './ErrorIndicator';
-import GeneSearch from './GeneSearch';
 import IconButton from './IconButton';
 import Input from './Input';
 import { Background, Body, ButtonWrapper, Column, Container, Flex, InlineFlex } from './Layout';
@@ -22,6 +21,7 @@ import Modal from './Modal/Modal';
 import Navbar from './Navbar/Navbar';
 import Popover from './Popover/Popover';
 import { RequiredIndicator, RequiredTextBox } from './RequiredIndicator';
+import GeneCombinedSearch from './Search/GeneCombinedSearch';
 import SelectableList, { SelectableListWrapper } from './SelectableList';
 import Snackbar from './Snackbar/Snackbar';
 import Spinner from './Spinner';
@@ -50,7 +50,7 @@ export {
     ErrorFallback,
     ErrorIndicator,
     Flex,
-    GeneSearch,
+    GeneCombinedSearch,
     InlineFlex,
     IconButton,
     Input,

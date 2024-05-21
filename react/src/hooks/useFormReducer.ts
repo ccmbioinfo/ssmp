@@ -113,16 +113,18 @@ const validateField = <S>(
         }
     }
     let error: Error | null = null;
-    validator[field]?.rules?.forEach(rule => {
-        if (!rule.valid(state, value) && getFieldRequired(state, field, validator)) {
-            const { displayError = true, error: errorText } = rule;
-            error = {
-                displayError,
-                errorText,
-            };
-            return;
+    if (validator[field]?.rules !== undefined) {
+        for (let rule of validator[field]!.rules!) {
+            if (!rule.valid(state, value) && getFieldRequired(state, field, validator)) {
+                const { displayError = true, error: errorText } = rule;
+                error = {
+                    displayError,
+                    errorText,
+                };
+                break;
+            }
         }
-    });
+    }
     return error;
 };
 

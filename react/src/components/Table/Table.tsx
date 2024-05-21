@@ -62,7 +62,7 @@ export type FlattenedQueryResponse = Omit<IndividualResponseFields, 'info' | 'di
         'callsets' | 'info'
     > &
     CallsetInfoFields &
-    VariantResponseInfoFields & { source: string; diseases: string };
+    VariantResponseInfoFields & { source: string; diseases: string; geneName: string };
 export interface ResultTableColumns extends FlattenedQueryResponse {
     maleCount: number;
     emptyCaseDetails: string;
@@ -141,6 +141,12 @@ const Table: React.FC<TableProps> = ({ variantData }) => {
                         width: getColumnWidth('Chr'),
                         disableFilters: true,
                         disableSortBy: true,
+                    },
+                    {
+                        accessor: 'geneName',
+                        id: 'geneName',
+                        Header: 'Gene Name',
+                        width: getColumnWidth('Gene Name'),
                     },
                     {
                         accessor: 'start',
