@@ -1,3 +1,7 @@
-import { GnomadGRCh37AnnotationModel, GnomadGRCh38AnnotationModels } from './GnomadAnnotationModel';
+import {
+  getGnomadAnnotationModel,
+} from './GnomadAnnotationModel';
 
-export { GnomadGRCh37AnnotationModel, GnomadGRCh38AnnotationModels };
+export {
+  getGnomadAnnotationModel,
+};

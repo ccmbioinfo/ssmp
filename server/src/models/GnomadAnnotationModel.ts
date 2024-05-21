@@ -1,6 +1,7 @@
 import mongoose, { Model, model } from 'mongoose';
 import logger from '../logger';
 import {
+  AssemblyId,
   CMHVariantIndelCoordinate,
   GnomadBaseAnnotation,
   GnomadGenomeAnnotation,
@@ -155,7 +156,7 @@ GnomadGRCh37AnnotationSchema.statics.getAnnotations = async function (ids: Annot
     'gene',
     'transcript',
   ]);
-  const genomeAnnotations = await getAnnotations(GnomadGRCh37GenomeAnnotationModel, ids, [
+  const genomeAnnotations = await getAnnotations(getGnomadGRCh37GenomeAnnotationModel(), ids, [
     'cdna',
     'gene',
     'source',
@@ -194,26 +195,30 @@ GnomadGRCh38AnnotationSchema.statics.getAnnotations = async function (ids: Annot
   };
 };
 
-export const GnomadGRCh37AnnotationModel = model<
-  GnomadGRCh37ExomeAnnotation,
-  GnomadGRCh37ExomeAnnotationModel
->('GnomadGRCh37ExomeAnnotation', GnomadGRCh37AnnotationSchema, 'GRCh37ExomeAnnotations');
-
-const GnomadGRCh37GenomeAnnotationModel = model<
+const getGnomadGRCh37GenomeAnnotationModel = () => model<
   GnomadGenomeAnnotation,
   GnomadGenomeAnnotationModel
 >('GnomadGRCh37GenomeAnnotation', GnomadGRCh37GenomeAnnotationSchema, 'GRCh37GenomeAnnotations');
 
-export const GnomadGRCh38AnnotationModels = [
-  ...Array.from({ length: 22 }, (_, i) => `${i + 1}`),
-  'X',
-  'Y',
-].reduce((modelMapping, chr) => {
-  modelMapping[chr] = model<GnomadGenomeAnnotation, GnomadGenomeAnnotationModel>(
-    `GnomadGRCh38GenomeAnnotation_chr${chr}`,
-    GnomadGRCh38AnnotationSchema,
-    `GRCh38GenomeAnnotations_chr${chr}`
-  );
-
-  return modelMapping;
-}, {} as { [key: string]: GnomadGenomeAnnotationModel });
+export const getGnomadAnnotationModel = (assembly: AssemblyId, chromosome: string) => {
+  chromosome = chromosome.replace('chr', '');
+  if (assembly.includes('38')) {
+    // GRCh38
+    if ([...Array.from({ length: 22 }, (_, i) => `${i + 1}`), 'X', 'Y'].includes(chromosome)) {
+      return model<GnomadGenomeAnnotation, GnomadGenomeAnnotationModel>(
+        `GnomadGRCh38GenomeAnnotation_chr${chromosome}`,
+        GnomadGRCh38AnnotationSchema,
+        `GRCh38GenomeAnnotations_chr${chromosome}`
+      );
+    } else {
+      throw Error(`Chromosome '${chromosome}' invalid; cannot fetch Gnomad annotation model`);
+    }
+  } else {
+    // GRCh37
+    return model<GnomadGRCh37ExomeAnnotation, GnomadGRCh37ExomeAnnotationModel>(
+      'GnomadGRCh37ExomeAnnotation',
+      GnomadGRCh37AnnotationSchema,
+      'GRCh37ExomeAnnotations'
+    );
+  }
+};
