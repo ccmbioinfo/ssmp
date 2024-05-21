@@ -118,6 +118,14 @@ jobs:
           G4RD_GRANT_TYPE: ${{ secrets.G4RD_GRANT_TYPE }}
           G4RD_TOKEN_URL: ${{ secrets.G4RD_TOKEN_URL }}
           G4RD_CLIENT_ID: ${{ secrets.G4RD_CLIENT_ID }}
+          CMH_AZURE_CLIENT_ID: ${{ secrets.CMH_AZURE_CLIENT_ID }}
+          CMH_AZURE_CLIENT_SECRET: ${{ secrets.CMH_AZURE_CLIENT_SECRET }}
+          CMH_TOKEN_URL: ${{ secrets.CMH_TOKEN_URL }}
+          CMH_RESOURCE: ${{ secrets.CMH_RESOURCE }}
+          CMH_SCOPE: ${{ secrets.CMH_SCOPE }}
+          CMH_GRANT_TYPE: ${{ secrets.CMH_GRANT_TYPE }}
+          CMH_GENE42_SECRET: ${{ secrets.CMH_GENE42_SECRET }}
+          CMH_URL: ${{ secrets.CMH_URL }}
           KEYCLOAK_AUTH_URL: ${{ secrets.KEYCLOAK_AUTH_URL }}
           KEYCLOAK_REALM: ${{ secrets.KEYCLOAK_REALM }}
           KEYCLOAK_CLIENT_ID: ${{ secrets.KEYCLOAK_CLIENT_ID }}
