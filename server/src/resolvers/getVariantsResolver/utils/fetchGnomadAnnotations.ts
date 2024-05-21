@@ -19,7 +19,7 @@ const fetchGnomadAnnotations = timeitAsync('annotateGnomad')(
       const resolvedAssemblyId = resolveAssembly(assemblyId);
       const { chromosome } = resolveChromosome(position);
       const annotationCoordinates = getCoordinates(queryResponse);
-      const GnomadAnnotationModel = getGnomadAnnotationModel(resolvedAssemblyId, chromosome)
+      const GnomadAnnotationModel = getGnomadAnnotationModel(resolvedAssemblyId, chromosome);
       logger.debug(`model: '${typeof GnomadAnnotationModel}'`);
       const annotations = await GnomadAnnotationModel.getAnnotations(annotationCoordinates);
 

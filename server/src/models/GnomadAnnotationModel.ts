@@ -195,10 +195,12 @@ GnomadGRCh38AnnotationSchema.statics.getAnnotations = async function (ids: Annot
   };
 };
 
-const getGnomadGRCh37GenomeAnnotationModel = () => model<
-  GnomadGenomeAnnotation,
-  GnomadGenomeAnnotationModel
->('GnomadGRCh37GenomeAnnotation', GnomadGRCh37GenomeAnnotationSchema, 'GRCh37GenomeAnnotations');
+const getGnomadGRCh37GenomeAnnotationModel = () =>
+  model<GnomadGenomeAnnotation, GnomadGenomeAnnotationModel>(
+    'GnomadGRCh37GenomeAnnotation',
+    GnomadGRCh37GenomeAnnotationSchema,
+    'GRCh37GenomeAnnotations'
+  );
 
 export const getGnomadAnnotationModel = (assembly: AssemblyId, chromosome: string) => {
   chromosome = chromosome.replace('chr', '');

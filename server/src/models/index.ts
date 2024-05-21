@@ -1,7 +1,3 @@
-import {
-  getGnomadAnnotationModel,
-} from './GnomadAnnotationModel';
+import { getGnomadAnnotationModel } from './GnomadAnnotationModel';
 
-export {
-  getGnomadAnnotationModel,
-};
+export { getGnomadAnnotationModel };
