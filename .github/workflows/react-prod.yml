@@ -38,7 +38,7 @@ jobs:
           node-version: 16
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
-        run: echo "dir=$(yarn cache dir)" >> "$GITHUB_OUTPUT"
+        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
       - uses: actions/cache@v4
         id: yarn-cache
         with:
@@ -75,7 +75,7 @@ jobs:
           node-version: 16
       - name: Get yarn cache path
         id: yarn-cache-path
-        run: echo "dir=$(yarn cache dir)" >> "$GITHUB_OUTPUT"
+        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
       - uses: actions/cache@v4
         id: restore
         with:
