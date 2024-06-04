@@ -137,8 +137,10 @@ jobs:
         #
         # https://docs.docker.com/engine/context/working-with-contexts/
         # This avoids passing an -H parameter to every Docker CLI call.
+        #
+        # We use `tr` to trim newlines. GITHUB_OUTPUT doesn't like multi-line strings
         run: |
-          SSH_AGENT_EVAL=$(ssh-agent -s)
+          SSH_AGENT_EVAL=$(ssh-agent -s | tr '\012\015' ' '; echo)
           eval "$SSH_AGENT_EVAL"
           ssh-add - <<< "${{ secrets.DEPLOY_PRIVATE_KEY }}"
           echo "ssh-agent-eval=$SSH_AGENT_EVAL" >> $GITHUB_OUTPUT
