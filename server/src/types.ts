@@ -264,7 +264,7 @@ export interface CaddAnnotation extends VariantCoordinate {
   aaAlt: string;
   aaPos: string;
   aaRef: string;
-  cdnaPos: string;
+  cdsPos: string;
   consequence: string;
   consScore: number;
   phred: number;

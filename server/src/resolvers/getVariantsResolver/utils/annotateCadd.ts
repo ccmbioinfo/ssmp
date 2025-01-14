@@ -28,7 +28,7 @@ const annotate = timeit('annotateCadd')(
 
       if (key in annotationKeys) {
         /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-        const { aaAlt, aaPos, aaRef, cdnaPos, chrom, pos, alt, ref, ...rest } = annotationKeys[key];
+        const { aaAlt, aaPos, aaRef, cdsPos, chrom, pos, alt, ref, ...rest } = annotationKeys[key];
         response.variant.info = {
           ...response.variant.info,
           aaChange:
@@ -42,7 +42,8 @@ const annotate = timeit('annotateCadd')(
                   aaAlt === aaRef ? '=' : AMINO_ACID_MAPPING[aaAlt]
                 }`
               : 'NA',
-          cdna: alt && cdnaPos && cdnaPos !== 'NA' && ref ? `c.${cdnaPos}${ref}>${alt}` : 'NA',
+          // uses CDSpos instead of cDNApos
+          cdna: alt && cdsPos && cdsPos !== 'NA' && ref ? `c.${cdsPos}${ref}>${alt}` : 'NA',
           ...rest,
         };
       }
