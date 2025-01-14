@@ -69,7 +69,8 @@ const _getAnnotations = async (position: string, assemblyId: string) => {
     oAA: 17
     nAA: 18
     FeatureID: 20
-    cDNApos: 25
+    cDNApos: 25  // deprecated for use in OSMP
+    CDSpos: 27  // replaces cDNApos
     protpos: 29
     spliceAI-acc-gain: 94 (GRCh37) 109 (GRCh38)
     spliceAI-acc-loss: 95 (GRCh37) 110 (GRCh38)
@@ -95,7 +96,7 @@ const _formatAnnotations = (annotations: string[], assemblyId: string) => {
     ['aaRef', 16],
     ['aaAlt', 17],
     ['transcript', 19],
-    ['cdnaPos', 24],
+    ['cdsPos', 26], // actually CDSpos
     ['aaPos', 28],
     ['phred', assemblyId === 'GRCh37' ? 115 : 133],
   ];
