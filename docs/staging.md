@@ -1,6 +1,6 @@
 # Staging
 
-OSMP is deployed via Docker Compose at [https://osmp.ccmdev.ca/](https://osmp.ccmdev.ca/). For G4RD data source, the OSMP staging instance is connected to the [staging instance of G4RD Phenotips](https://staging.phenotips.genomics4rd.ca) and the [staging instance of CMH Phenotips](https://phenotipstest-ga4k.cmh.edu). To deploy the frontend, compiled static bundles are uploaded to a designated MinIO bucket. The routing between the frontend and backend is handled by the HAProxy reverse proxy. User accounts are managed in [Keycloak](https://keycloak.ccmdev.ca).
+OSMP is deployed via Docker Compose at [https://osmp-staging.genomics4rd.ca/](https://osmp-staging.genomics4rd.ca/). For G4RD data source, the OSMP staging instance is connected to the [staging instance of G4RD Phenotips](https://staging.phenotips.genomics4rd.ca) and the [staging instance of CMH Phenotips](https://phenotipstest-ga4k.cmh.edu). To deploy the frontend, compiled static bundles are uploaded to a designated MinIO bucket. The routing between the frontend and backend is handled by the HAProxy reverse proxy. User accounts are managed in [Keycloak](https://keycloak.-staging.genomics4rd.ca).
 
 ## Continuous deployment through Github Actions
 
