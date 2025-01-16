@@ -12,7 +12,17 @@ on:
     paths:
       - .github/workflows/react.yml
       - react/**/*
-
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: "Log level"
+        required: true
+        default: "warning"
+        type: choice
+        options:
+          - info
+          - warning
+          - debug
 jobs:
   build-react:
     runs-on: ubuntu-latest
