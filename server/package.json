@@ -27,7 +27,7 @@
     "jwt-decode": "^3.1.2",
     "keycloak-connect": "21.0.1",
     "memorystore": "^1.6.7",
-    "mongoose": "^6.11.3",
+    "mongoose": "^8.9.5",
     "node-cache": "^5.1.2",
     "subscriptions-transport-ws": "^0.11.0",
     "winston": "^3.3.3"
